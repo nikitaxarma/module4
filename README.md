@@ -4,11 +4,11 @@ DegenToken is an ERC-20 token built on the Avalanche blockchain, designed for th
 
 # Features
 
-# Minting: The contract owner can mint tokens for players in a queue.
-# Transferring: Players can transfer tokens to each other.
-# Redeeming Cards: Players can redeem tokens for special gaming cards.
-# Burning: Tokens can be burned, reducing the total supply.
-# Checking Balance: Players can check their token balance.
+Minting: The contract owner can mint tokens for players in a queue.
+Transferring: Players can transfer tokens to each other.
+Redeeming Cards: Players can redeem tokens for special gaming cards.
+Burning: Tokens can be burned, reducing the total supply.
+Checking Balance: Players can check their token balance.
 
 # Usage
 
