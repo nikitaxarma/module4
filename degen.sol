@@ -1,92 +1,49 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-contract DegenToken is ERC20,Ownable,ERC20Burnable{
+contract DegenToken is ERC20, Ownable {
+    mapping(string => uint256) public carPrices;
+    mapping(address => mapping(string => uint256)) public redeemedItems; // Tracks the redeemed items for each player
 
-    constructor() ERC20("Degen", "DGN") Ownable(msg.sender){}
-
-    //redeemable items
-    enum Cards{rare,superRare,epic,mythic,legendary}
-
-    struct Player{
-        address toAddress;
-        uint amount;
+    constructor(address initialOwner) ERC20("DegenToken", "DGN") Ownable(initialOwner) {
+        // Initialize some items with their prices
+        carPrices["bmw"] = 50;
+        carPrices["mercedes"] = 200;
+        carPrices["ALTO"] = 150;
     }
-    //to create the queue of player for buying degen 
-    Player[] public players;
-
-    struct PlayerCards{
-        uint rare;
-        uint superRare;
-        uint epic;
-        uint mythic;
-        uint legendary;        
+    // Minting new tokens (only owner)
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
     }
 
-    //To store the redeemed cards
-    mapping (address=>PlayerCards) public playerCards;
+    // Redeeming tokens for car
+    function redeem(string memory itemName) public {
+        require(carPrices[itemName] > 0, "car does not exist");
+        require(balanceOf(msg.sender) >= carPrices[itemName], "Insufficient balance");
 
-    function buyDegen(address _toAddress,uint _amount)public{
-        players.push(Player({toAddress:_toAddress,amount:_amount}));
-    }
-
-    //mint tokens for the buyers in the queue
-    function mintToken() public onlyOwner {
-        //loop to mint tokens for buyers in queue
-        while (players.length!=0) {
-            uint i = players.length -1;
-            if (players[i].toAddress != address(0)) { // Check for non-zero address
-            _mint(players[i].toAddress, players[i].amount);
-            players.pop();
-            }
-        }
-    }
-    
-    //Transfert tokens to other player
-    function transferDegen(address _to, uint _amount)public {
-        require(_amount<=balanceOf(msg.sender),"low degen");
-        _transfer(msg.sender, _to, _amount);
+        _burn(msg.sender, carPrices[itemName]);
+        redeemedItems[msg.sender][itemName] += 1; // Record the redeemed item
+        emit ItemRedeemed(msg.sender, itemName, carPrices[itemName]);
     }
 
-    //Redeem different cards
-    function redeemCards( Cards _card)public{
-        if(_card == Cards.rare){
-            require(balanceOf(msg.sender)>=10,"Low degen");
-            playerCards[msg.sender].rare +=1;
-            burn(10);
-        }else if(_card == Cards.superRare){
-            require(balanceOf(msg.sender)>=20,"Low degen");
-            playerCards[msg.sender].superRare +=1;
-            burn(20);
-        }else if(_card == Cards.epic){
-            require(balanceOf(msg.sender)>=30,"Low degen");
-            playerCards[msg.sender].epic +=1;
-            burn(30);
-        }else if(_card == Cards.mythic){
-            require(balanceOf(msg.sender)>=40,"Low degen");
-            playerCards[msg.sender].mythic +=1;
-            burn(40);
-        }else if(_card == Cards.legendary){
-            require(balanceOf(msg.sender)>=50,"Low degen");
-            playerCards[msg.sender].legendary +=1;
-            burn(50);
-        }else{
-            revert("invalid card selected");
-        }
+    // Burning tokens
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
     }
 
-    //function to burn token
-    function burnDegen(address _of, uint amount)public {
-        _burn(_of, amount);
+    // Add new car (only owner)
+    function addItem(string memory itemName, uint256 price) public onlyOwner {
+        carPrices[itemName] = price;
     }
 
-    //function to check the tokens
-    function checkBalance()public view returns(uint){
-        return balanceOf(msg.sender);
+    // Check how many items a player has redeemed
+    function getRedeemedItemCount(address player, string memory itemName) public view returns (uint256) {
+        return redeemedItems[player][itemName];
     }
+
+    // Event emitted when an item is redeemed
+    event ItemRedeemed(address indexed player, string itemName, uint256 price);
 }
-//0x1234567890abcdef1234567890abcdef12345678
